@@ -1,0 +1,60 @@
+INCLUDE_DIRECTORIES(
+	${HEADER_DIR}
+	include
+)
+
+LINK_DIRECTORIES (
+	${LINK_LIBRARIES_DIR}
+)
+
+SET(TARGET_NAME
+	curlclient_test${FILE_PREFIX}
+)
+
+AUX_SOURCE_DIRECTORY(source SOURCE_LIST)
+FILE (GLOB HEADER_LIST "include/*.h")
+
+SET (HEADER_LIST
+	${HEADER_LIST}
+)
+
+SET(LIBRARIES_NAME 
+	curlclient
+	ospathtool
+	stringtool
+	randtool
+	mediatool
+	timetool
+)
+INCLUDE (${PROJECT_SOURCE_DIR}/script/linklib.cmake)
+#SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES DEBUG_POSTFIX "_d")
+
+IF (${os} STREQUAL "windows")
+		ADD_EXECUTABLE (${TARGET_NAME} ${SOURCE_LIST} ${HEADER_LIST})
+		TARGET_LINK_LIBRARIES (${TARGET_NAME}
+				${DEBUG_LINK_LIBRARIES}
+				${RELEASE_LINK_LIBRARIES}
+				debug libcurl-d_imp optimized libcurl_imp
+		)
+ELSEIF (${os} STREQUAL "linux")	
+		IF (${PLATFORM_TYPE} MATCHES "arm")
+			MESSAGE(STATUS "curlclient_test arm not compile")
+		ELSE()
+				ADD_EXECUTABLE (${TARGET_NAME} ${SOURCE_LIST} ${HEADER_LIST})
+				TARGET_LINK_LIBRARIES (${TARGET_NAME}
+					${DEBUG_LINK_LIBRARIES}
+					${RELEASE_LINK_LIBRARIES}
+					curl7.55.1
+				)
+		
+				SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -static")
+				SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")
+		
+				IF (${CMAKE_BUILD_TYPE} STREQUAL "Release")	
+						ADD_CUSTOM_COMMAND(TARGET ${TARGET_NAME} POST_BUILD COMMAND echo "strip"
+									COMMAND ${STRIP} ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${TARGET_NAME}
+									COMMAND cp ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${TARGET_NAME} ~/nfs/${PLATFORM_NAME} -f
+					)
+				ENDIF()	
+		ENDIF()
+ENDIF()
